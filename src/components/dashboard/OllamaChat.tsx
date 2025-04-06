@@ -16,6 +16,9 @@ interface Model {
   name: string;
 }
 
+// n8n API key
+const N8N_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNmI5MWRhNy1iNTA5LTRlOWMtOGE2Zi1jY2UzNjFjNDg5OTYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzQzOTM4MzUzfQ.TwBc9feJWl5QHQrPNLWsE6AhRcLTL3CfDc0U1OJrBR4";
+
 const OllamaChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -68,6 +71,10 @@ const OllamaChat: React.FC = () => {
     try {
       const response = await fetch('http://localhost:5678/rest/healthz', {
         method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-KEY': N8N_API_KEY
+        },
       });
       
       if (!response.ok) {
@@ -91,7 +98,7 @@ const OllamaChat: React.FC = () => {
     
     if (!input.trim()) return;
     
-    const userMessage = { role: 'user' as const, content: input };
+    const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -129,7 +136,7 @@ const OllamaChat: React.FC = () => {
       }
       
       const data = await response.json();
-      const assistantMessage = { 
+      const assistantMessage: Message = { 
         role: 'assistant', 
         content: data.message?.content || "I'll help you with that workflow."
       };
@@ -145,6 +152,7 @@ const OllamaChat: React.FC = () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-N8N-API-KEY': N8N_API_KEY
             },
             body: JSON.stringify({
               name: `Workflow for ${clientName}`,
@@ -162,10 +170,11 @@ const OllamaChat: React.FC = () => {
             });
             
             // Add system message about the workflow creation
-            setMessages((prev) => [...prev, { 
+            const systemMessage: Message = { 
               role: 'system', 
               content: `✅ Created workflow "${workflowData.data.name}" in n8n.`
-            }]);
+            };
+            setMessages((prev) => [...prev, systemMessage]);
           } else {
             throw new Error('Failed to create workflow');
           }
@@ -178,10 +187,11 @@ const OllamaChat: React.FC = () => {
           });
           
           // Add system message about the failure
-          setMessages((prev) => [...prev, { 
+          const systemMessage: Message = { 
             role: 'system', 
             content: '❌ Failed to create workflow in n8n. Please make sure n8n is running.'
-          }]);
+          };
+          setMessages((prev) => [...prev, systemMessage]);
         }
       }
     } catch (error) {
@@ -192,10 +202,11 @@ const OllamaChat: React.FC = () => {
         variant: "destructive",
       });
       
-      setMessages((prev) => [...prev, { 
+      const errorMessage: Message = { 
         role: 'assistant', 
         content: "I couldn't process your request. Please ensure Ollama is running on your local machine."
-      }]);
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }

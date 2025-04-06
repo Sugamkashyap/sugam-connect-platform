@@ -10,6 +10,9 @@ import { MessageSquare, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
+// n8n API key
+const N8N_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNmI5MWRhNy1iNTA5LTRlOWMtOGE2Zi1jY2UzNjFjNDg5OTYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzQzOTM4MzUzfQ.TwBc9feJWl5QHQrPNLWsE6AhRcLTL3CfDc0U1OJrBR4";
+
 const DashboardLayout: React.FC = () => {
   const { user } = useAuth();
   const [showChat, setShowChat] = useState(false);
@@ -30,8 +33,13 @@ const DashboardLayout: React.FC = () => {
       }
       
       try {
-        // Check n8n
-        await fetch('http://localhost:5678/rest/healthz', { method: 'GET' });
+        // Check n8n with API key
+        await fetch('http://localhost:5678/rest/healthz', { 
+          method: 'GET',
+          headers: {
+            'X-N8N-API-KEY': N8N_API_KEY
+          }
+        });
       } catch (error) {
         toast({
           title: "n8n Not Detected",

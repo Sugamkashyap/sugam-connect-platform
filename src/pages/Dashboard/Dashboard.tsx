@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
+// n8n API key
+const N8N_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNmI5MWRhNy1iNTA5LTRlOWMtOGE2Zi1jY2UzNjFjNDg5OTYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzQzOTM4MzUzfQ.TwBc9feJWl5QHQrPNLWsE6AhRcLTL3CfDc0U1OJrBR4";
+
 const Dashboard: React.FC = () => {
   const { toast } = useToast();
   const [n8nStatus, setN8nStatus] = useState<'checking' | 'online' | 'offline'>('checking');
@@ -24,6 +27,7 @@ const Dashboard: React.FC = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'X-N8N-API-KEY': N8N_API_KEY
         }
       });
       
