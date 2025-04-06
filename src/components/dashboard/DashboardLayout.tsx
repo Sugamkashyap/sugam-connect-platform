@@ -7,11 +7,42 @@ import { useAuth } from '@/contexts/AuthContext';
 import OllamaChat from './OllamaChat';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const DashboardLayout: React.FC = () => {
   const { user } = useAuth();
   const [showChat, setShowChat] = useState(false);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    // Check if Ollama is installed when the dashboard loads
+    const checkOllamaAndN8n = async () => {
+      try {
+        // Check Ollama
+        await fetch('http://localhost:11434/api/tags', { method: 'GET' });
+      } catch (error) {
+        toast({
+          title: "Ollama Not Detected",
+          description: "To use the AI assistant, please make sure Ollama is running on localhost:11434",
+          variant: "destructive",
+        });
+      }
+      
+      try {
+        // Check n8n
+        await fetch('http://localhost:5678/rest/healthz', { method: 'GET' });
+      } catch (error) {
+        toast({
+          title: "n8n Not Detected",
+          description: "To create workflows, please make sure n8n is running on localhost:5678",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    checkOllamaAndN8n();
+  }, [toast]);
   
   return (
     <div className="flex h-screen overflow-hidden">

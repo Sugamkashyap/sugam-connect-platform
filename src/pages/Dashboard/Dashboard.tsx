@@ -1,15 +1,25 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, CreditCard, DollarSign, Users, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Activity, CreditCard, DollarSign, Users, AlertTriangle, ExternalLink, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const Dashboard: React.FC = () => {
   const { toast } = useToast();
+  const [n8nStatus, setN8nStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [showN8nDialog, setShowN8nDialog] = useState(false);
+  const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+
+  useEffect(() => {
+    checkN8nStatus();
+    checkOllamaStatus();
+  }, []);
 
   const checkN8nStatus = async () => {
     try {
+      setN8nStatus('checking');
       const response = await fetch('http://localhost:5678/rest/healthz', { 
         method: 'GET',
         headers: {
@@ -18,14 +28,17 @@ const Dashboard: React.FC = () => {
       });
       
       if (response.ok) {
+        setN8nStatus('online');
         toast({
           title: "n8n is running",
           description: "Successfully connected to n8n workflow engine",
         });
       } else {
+        setN8nStatus('offline');
         throw new Error('n8n service unavailable');
       }
     } catch (error) {
+      setN8nStatus('offline');
       toast({
         title: "Connection Error",
         description: "Unable to connect to n8n. Please make sure it's running on localhost:5678",
@@ -34,8 +47,30 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const checkOllamaStatus = async () => {
+    try {
+      setOllamaStatus('checking');
+      const response = await fetch('http://localhost:11434/api/tags', {
+        method: 'GET',
+      });
+      
+      if (response.ok) {
+        setOllamaStatus('online');
+      } else {
+        setOllamaStatus('offline');
+        throw new Error('Ollama service unavailable');
+      }
+    } catch (error) {
+      setOllamaStatus('offline');
+    }
+  };
+
   const openN8n = () => {
     window.open('http://localhost:5678', '_blank');
+  };
+
+  const openOllamaInfo = () => {
+    setShowN8nDialog(true);
   };
 
   return (
@@ -45,31 +80,75 @@ const Dashboard: React.FC = () => {
         <p className="text-muted-foreground">Here's an overview of your workspace activity</p>
       </div>
 
-      {/* n8n Status Card */}
-      <Card className="bg-amber-50 border-amber-200">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="bg-amber-100 p-3 rounded-full">
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
+      {/* Services Status Cards */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* n8n Status Card */}
+        <Card className={n8nStatus === 'online' ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={n8nStatus === 'online' ? "bg-green-100 p-3 rounded-full" : "bg-amber-100 p-3 rounded-full"}>
+                  {n8nStatus === 'online' ? (
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  ) : (
+                    <AlertTriangle className="h-6 w-6 text-amber-600" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-medium">n8n Workflow Engine</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {n8nStatus === 'online' 
+                      ? "Connected to n8n workflow engine on localhost:5678" 
+                      : "n8n workflow engine is not detected"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium">n8n Workflow Engine</h3>
-                <p className="text-sm text-muted-foreground">Ensure n8n is running on localhost:5678 to create and manage workflows</p>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={checkN8nStatus}>
+                  Check Status
+                </Button>
+                <Button onClick={openN8n}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open n8n
+                </Button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={checkN8nStatus}>
-                Check Status
-              </Button>
-              <Button onClick={openN8n}>
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Open n8n
-              </Button>
+          </CardContent>
+        </Card>
+
+        {/* Ollama Status Card */}
+        <Card className={ollamaStatus === 'online' ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={ollamaStatus === 'online' ? "bg-green-100 p-3 rounded-full" : "bg-amber-100 p-3 rounded-full"}>
+                  {ollamaStatus === 'online' ? (
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  ) : (
+                    <AlertTriangle className="h-6 w-6 text-amber-600" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-medium">Ollama AI Assistant</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {ollamaStatus === 'online' 
+                      ? "Connected to Ollama on localhost:11434" 
+                      : "Ollama service is not detected"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={checkOllamaStatus}>
+                  Check Status
+                </Button>
+                <Button onClick={openOllamaInfo}>
+                  Learn More
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -180,6 +259,29 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ollama Info Dialog */}
+      <Dialog open={showN8nDialog} onOpenChange={setShowN8nDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Setting Up Ollama</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="space-y-4">
+            <p>To use the AI assistant, you need to have Ollama running locally:</p>
+            <ol className="list-decimal pl-5 space-y-2">
+              <li>Download and install Ollama from <a href="https://ollama.ai" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">ollama.ai</a></li>
+              <li>Open a terminal and run: <code className="bg-gray-100 px-2 py-1 rounded">ollama run llama3</code></li>
+              <li>Ensure Ollama is running on port 11434</li>
+              <li>Refresh this page once Ollama is running</li>
+            </ol>
+            <p className="mt-4">For more information, visit the <a href="https://github.com/ollama/ollama" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">Ollama GitHub repository</a>.</p>
+          </DialogDescription>
+          <DialogFooter>
+            <Button onClick={() => setShowN8nDialog(false)}>Close</Button>
+            <Button variant="outline" onClick={checkOllamaStatus}>Check Connection</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
