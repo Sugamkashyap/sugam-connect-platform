@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,26 +14,30 @@ import Contact from "./pages/Contact";
 import Appointment from "./pages/Appointment";
 import NotFound from "./pages/NotFound";
 
+// Create a client
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/services" element={<Layout><Services /></Layout>} />
-          <Route path="/about" element={<Layout><About /></Layout>} />
-          <Route path="/blog" element={<Layout><Blog /></Layout>} />
-          <Route path="/contact" element={<Layout><Contact /></Layout>} />
-          <Route path="/appointment" element={<Layout><Appointment /></Layout>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+// Define App as a proper React function component
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Layout><Home /></Layout>} />
+            <Route path="/services" element={<Layout><Services /></Layout>} />
+            <Route path="/about" element={<Layout><About /></Layout>} />
+            <Route path="/blog" element={<Layout><Blog /></Layout>} />
+            <Route path="/contact" element={<Layout><Contact /></Layout>} />
+            <Route path="/appointment" element={<Layout><Appointment /></Layout>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
