@@ -20,7 +20,7 @@ const DashboardLayout: React.FC = () => {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Check if Ollama is installed when the dashboard loads
+    // Check if Ollama and n8n are installed when the dashboard loads
     const checkOllamaAndN8n = async () => {
       try {
         // Check Ollama
@@ -47,7 +47,7 @@ const DashboardLayout: React.FC = () => {
         // Check n8n with API key
         console.log('Checking n8n from DashboardLayout');
         console.log('N8N_URL:', N8N_URL);
-        console.log('N8N_API_KEY exists:', !!N8N_API_KEY);
+        console.log('Using API key:', N8N_API_KEY ? 'API key exists' : 'No API key found');
         
         const n8nResponse = await fetch(`${N8N_URL}/rest/healthz`, { 
           method: 'GET',
@@ -69,11 +69,10 @@ const DashboardLayout: React.FC = () => {
         }
         
         console.log('n8n is available');
-        // Validate the response format
-        const n8nData = await n8nResponse.json();
-        if (!n8nData || typeof n8nData !== 'object') {
-          throw new Error('Invalid response from n8n');
-        }
+        toast({
+          title: "n8n Connected",
+          description: "Successfully connected to n8n workflow engine",
+        });
       } catch (error) {
         console.error('n8n check failed:', error);
         toast({

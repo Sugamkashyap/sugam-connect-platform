@@ -27,6 +27,7 @@ const Dashboard: React.FC = () => {
     try {
       setN8nStatus('checking');
       console.log('Checking n8n status with URL:', N8N_URL);
+      console.log('Using API key:', N8N_API_KEY ? 'API key exists' : 'No API key found');
       
       const response = await fetch(`${N8N_URL}/rest/healthz`, { 
         method: 'GET',
@@ -36,6 +37,8 @@ const Dashboard: React.FC = () => {
         }
       });
       
+      console.log('n8n response status:', response.status);
+      
       if (response.ok) {
         console.log('n8n is online');
         setN8nStatus('online');
@@ -44,16 +47,16 @@ const Dashboard: React.FC = () => {
           description: "Successfully connected to n8n workflow engine",
         });
       } else {
-        console.log('n8n response not ok:', response.status);
+        console.error('n8n response not ok:', response.status, response.statusText);
         setN8nStatus('offline');
-        throw new Error('n8n service unavailable');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error checking n8n status:', error);
       setN8nStatus('offline');
       toast({
         title: "Connection Error",
-        description: "Unable to connect to n8n. Please make sure it's running on localhost:5678",
+        description: "Unable to connect to n8n. Please make sure it's running on localhost:5678 and your API key is correct",
         variant: "destructive",
       });
     }
@@ -83,7 +86,7 @@ const Dashboard: React.FC = () => {
   };
 
   const openN8n = () => {
-    window.open('http://localhost:5678', '_blank');
+    window.open(N8N_URL, '_blank');
   };
 
   const openOllamaInfo = () => {
