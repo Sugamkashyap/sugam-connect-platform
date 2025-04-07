@@ -1,13 +1,16 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, Play, Pause, Settings2, Activity, ExternalLink } from 'lucide-react';
 
-const N8N_URL = import.meta.env.VITE_N8N_URL;
+const N8N_URL = import.meta.env.VITE_N8N_URL || 'http://localhost:5678';
+const N8N_API_KEY = import.meta.env.VITE_N8N_API_KEY;
 
 const Workflows: React.FC = () => {
   const openN8n = () => {
+    console.log('Opening n8n at URL:', N8N_URL);
     window.open(N8N_URL, '_blank');
   };
 

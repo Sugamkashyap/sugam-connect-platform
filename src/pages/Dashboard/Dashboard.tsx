@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CreditCard, DollarSign, Users, AlertTriangle, ExternalLink, CheckCircle } from 'lucide-react';
@@ -11,7 +10,7 @@ import ClientTable from '@/components/dashboard/ClientTable';
 
 // n8n API key
 const N8N_API_KEY = import.meta.env.VITE_N8N_API_KEY;
-const N8N_URL = import.meta.env.VITE_N8N_URL;
+const N8N_URL = import.meta.env.VITE_N8N_URL || 'http://localhost:5678';
 
 const Dashboard: React.FC = () => {
   const { toast } = useToast();
@@ -27,6 +26,8 @@ const Dashboard: React.FC = () => {
   const checkN8nStatus = async () => {
     try {
       setN8nStatus('checking');
+      console.log('Checking n8n status with URL:', N8N_URL);
+      
       const response = await fetch(`${N8N_URL}/rest/healthz`, { 
         method: 'GET',
         headers: {
@@ -36,16 +37,19 @@ const Dashboard: React.FC = () => {
       });
       
       if (response.ok) {
+        console.log('n8n is online');
         setN8nStatus('online');
         toast({
           title: "n8n is running",
           description: "Successfully connected to n8n workflow engine",
         });
       } else {
+        console.log('n8n response not ok:', response.status);
         setN8nStatus('offline');
         throw new Error('n8n service unavailable');
       }
     } catch (error) {
+      console.error('Error checking n8n status:', error);
       setN8nStatus('offline');
       toast({
         title: "Connection Error",
@@ -58,17 +62,22 @@ const Dashboard: React.FC = () => {
   const checkOllamaStatus = async () => {
     try {
       setOllamaStatus('checking');
+      console.log('Checking Ollama status');
+      
       const response = await fetch('http://localhost:11434/api/tags', {
         method: 'GET',
       });
       
       if (response.ok) {
+        console.log('Ollama is online');
         setOllamaStatus('online');
       } else {
+        console.log('Ollama response not ok:', response.status);
         setOllamaStatus('offline');
         throw new Error('Ollama service unavailable');
       }
     } catch (error) {
+      console.error('Error checking Ollama status:', error);
       setOllamaStatus('offline');
     }
   };

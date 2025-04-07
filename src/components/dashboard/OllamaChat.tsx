@@ -19,7 +19,7 @@ interface Model {
 
 // API keys and configuration
 const N8N_API_KEY = import.meta.env.VITE_N8N_API_KEY;
-const N8N_URL = import.meta.env.VITE_N8N_URL;
+const N8N_URL = import.meta.env.VITE_N8N_URL || 'http://localhost:5678';
 const SERPAPI_KEY = import.meta.env.VITE_SERPAPI_KEY;
 
 const RETRY_ATTEMPTS = 3;
@@ -29,7 +29,7 @@ const OllamaChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('llama3');
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const [availableModels, setAvailableModels] = useState<Model[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [workflowJson, setWorkflowJson] = useState<string>('');
@@ -39,16 +39,18 @@ const OllamaChat: React.FC = () => {
   
   useEffect(() => {
     checkOllamaConnection();
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  
-    // Set up periodic connection check
     const intervalId = setInterval(checkOllamaConnection, CONNECTION_CHECK_INTERVAL);
     return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const checkOllamaConnection = async (retryCount = 0) => {
     try {
       setConnectionStatus('checking');
+      console.log('Checking Ollama connection...');
       
       const response = await fetch('http://localhost:11434/api/tags', {
         method: 'GET',
@@ -56,7 +58,19 @@ const OllamaChat: React.FC = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setAvailableModels(data.models || []);
+        console.log('Available models:', data);
+        
+        if (data.models && Array.isArray(data.models) && data.models.length > 0) {
+          setAvailableModels(data.models);
+          // Select the first model by default if none is selected
+          if (!selectedModel && data.models.length > 0) {
+            setSelectedModel(data.models[0].name);
+          }
+        } else {
+          console.log('No models found in response');
+          setAvailableModels([]);
+        }
+        
         setConnectionStatus('connected');
         
         if (retryCount > 0) {
@@ -66,6 +80,7 @@ const OllamaChat: React.FC = () => {
           });
         }
       } else {
+        console.error('Ollama response not ok:', response.status);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
@@ -75,6 +90,7 @@ const OllamaChat: React.FC = () => {
       if (retryCount < RETRY_ATTEMPTS) {
         // Exponential backoff retry
         const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+        console.log(`Retrying in ${delay}ms (attempt ${retryCount + 1}/${RETRY_ATTEMPTS})`);
         setTimeout(() => checkOllamaConnection(retryCount + 1), delay);
       } else {
         toast({
@@ -88,6 +104,10 @@ const OllamaChat: React.FC = () => {
 
   const checkN8nStatus = async () => {
     try {
+      console.log('Checking n8n status...');
+      console.log('N8N_URL:', N8N_URL);
+      console.log('N8N_API_KEY:', N8N_API_KEY ? 'API key exists' : 'API key missing');
+      
       const response = await fetch(`${N8N_URL}/rest/healthz`, {
         method: 'GET',
         headers: {
@@ -95,6 +115,8 @@ const OllamaChat: React.FC = () => {
           'X-N8N-API-KEY': N8N_API_KEY
         },
       });
+      
+      console.log('n8n response status:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -125,6 +147,12 @@ const OllamaChat: React.FC = () => {
 
   const performWebSearch = async (query: string) => {
     try {
+      if (!SERPAPI_KEY) {
+        console.log('No SerpAPI key available, skipping web search');
+        return '';
+      }
+      
+      console.log('Performing web search for:', query);
       const response = await fetch(`https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${SERPAPI_KEY}`);
       const data = await response.json();
       
@@ -139,12 +167,20 @@ const OllamaChat: React.FC = () => {
       console.error('Web search error:', error);
       return '';
     }
-};
+  };
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!input.trim()) return;
+    if (!selectedModel) {
+      toast({
+        title: "Model Not Selected",
+        description: "Please select an Ollama model first",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -152,84 +188,64 @@ const handleSubmit = async (e: React.FormEvent) => {
     setIsLoading(true);
     
     try {
+      console.log('Sending request to Ollama API with model:', selectedModel);
+      console.log('User input:', input);
+      
+      // First verify n8n is available
+      await checkN8nStatus();
+      
       // Send request to Ollama API with specific prompt for workflow generation
-      const response = await fetch('http://localhost:11434/api/generate', {
+      const response = await fetch('http://localhost:11434/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: selectedModel,
-          prompt: `You are a professional n8n workflow architect with deep expertise in business process automation. Your task is to create enterprise-grade n8n workflows that follow industry best practices.
-
-Context from web search (if available):
-${await performWebSearch(input)}
-
-Workflow Creation Guidelines:
-
-1. Architecture & Design:
-   - Use modular design with clear separation of concerns
-   - Implement parallel processing where applicable
-   - Add proper error boundaries and recovery mechanisms
-   - Include comprehensive logging and monitoring
-   - Set up appropriate retry strategies with exponential backoff
-
-2. Node Configuration:
-   - Configure detailed error handling for each node
-   - Set appropriate timeouts and rate limits
-   - Add input validation with type checking
-   - Include detailed descriptions and documentation
-   - Use consistent naming conventions
-
-3. Data Processing:
-   - Implement data transformation with proper error handling
-   - Add data validation at entry and exit points
-   - Use efficient data structures and processing methods
-   - Include data sanitization and security checks
-   - Handle edge cases and null values
-
-4. Security & Performance:
-   - Implement authentication and authorization
-   - Use secure credential storage
-   - Add rate limiting and request throttling
-   - Optimize resource usage and processing time
-   - Include audit logging for sensitive operations
-
-5. Error Handling & Monitoring:
-   - Add comprehensive error notifications
-   - Implement error recovery mechanisms
-   - Include detailed error logging
-   - Set up monitoring and alerting
-   - Add performance metrics collection
-
-6. Industry-Specific Considerations:
-   - Follow relevant compliance requirements
-   - Implement industry-standard security measures
-   - Add domain-specific validation rules
-   - Include necessary regulatory checks
-   - Follow industry best practices
-
-Analyze the following request and create a production-ready n8n workflow:
-${input}
-
-Respond with a complete, production-ready workflow JSON that includes all necessary nodes, connections, and configurations. The JSON must follow the n8n workflow schema and include all required security, error handling, and monitoring components.`,
+          messages: [
+            {
+              role: "system",
+              content: `You are a professional n8n workflow architect with deep expertise in business process automation. Your task is to create enterprise-grade n8n workflows that follow industry best practices.`
+            },
+            {
+              role: "user", 
+              content: `Create a workflow for: ${input}\n\nContext from web search (if available):\n${await performWebSearch(input)}`
+            }
+          ],
           stream: false,
         }),
       });
       
       if (!response.ok) {
+        console.error('Ollama API error:', response.status, response.statusText);
         throw new Error(`Failed to connect to Ollama API: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('Ollama response:', data);
+      
       let workflowJson;
+      const aiResponseContent = data.message?.content;
+      
+      if (!aiResponseContent) {
+        throw new Error('No content in Ollama response');
+      }
       
       try {
-        // Extract and validate the workflow JSON
-        const aiResponse = data.response;
-        // Remove any potential markdown formatting or extra text
-        const jsonStr = aiResponse.replace(/```json\n?|```/g, '').trim();
-        const parsedJson = JSON.parse(jsonStr);
+        // Extract JSON from the response (may be wrapped in markdown code blocks)
+        const jsonMatch = aiResponseContent.match(/```json\n?([\s\S]*?)\n?```/) || 
+                          aiResponseContent.match(/```\n?([\s\S]*?)\n?```/) ||
+                          aiResponseContent.match(/{[\s\S]*}/);
+                          
+        const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : aiResponseContent;
+        console.log('Extracted JSON string:', jsonStr);
+        
+        // Remove any markdown formatting that might remain
+        const cleanedJsonStr = jsonStr.replace(/```json\n?|```/g, '').trim();
+        console.log('Cleaned JSON string:', cleanedJsonStr);
+        
+        // Parse the JSON
+        const parsedJson = JSON.parse(cleanedJsonStr);
         
         // Basic validation of workflow structure
         if (!parsedJson.nodes || !Array.isArray(parsedJson.nodes)) {
@@ -241,21 +257,13 @@ Respond with a complete, production-ready workflow JSON that includes all necess
         }
 
         // Store the formatted JSON for display
-        setWorkflowJson(JSON.stringify(parsedJson, null, 2));
+        const formattedJson = JSON.stringify(parsedJson, null, 2);
+        console.log('Parsed workflow JSON:', formattedJson);
+        setWorkflowJson(formattedJson);
         workflowJson = parsedJson;
-      } catch (parseError) {
-        console.error('Workflow JSON parsing error:', parseError);
-        const errorMessage: Message = {
-          role: 'assistant',
-          content: "I couldn't generate a valid workflow JSON. Please try rephrasing your request with more specific details about the automation you need."
-        };
-        setMessages((prev) => [...prev, errorMessage]);
-        return;
-      }
-      
-      // Create the workflow in n8n
-      try {
-        const workflowResponse = await fetch('http://localhost:5678/rest/workflows', {
+        
+        // Now send this to n8n to create the workflow
+        const workflowResponse = await fetch(`${N8N_URL}/rest/workflows`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -266,6 +274,8 @@ Respond with a complete, production-ready workflow JSON that includes all necess
         
         if (workflowResponse.ok) {
           const workflowData = await workflowResponse.json();
+          console.log('n8n workflow created:', workflowData);
+          
           toast({
             title: "Workflow Created",
             description: `New workflow has been created in n8n with the provided automation logic`,
@@ -277,28 +287,41 @@ Respond with a complete, production-ready workflow JSON that includes all necess
           };
           setMessages((prev) => [...prev, successMessage]);
         } else {
-          throw new Error('Failed to create workflow');
+          const errorData = await workflowResponse.json().catch(() => ({}));
+          console.error('n8n workflow creation failed:', workflowResponse.status, errorData);
+          throw new Error(`Failed to create workflow: ${errorData.message || workflowResponse.statusText}`);
         }
-      } catch (error) {
-        console.error('Failed to create n8n workflow:', error);
-        const errorMessage: Message = {
+        
+      } catch (parseError) {
+        console.error('Workflow JSON parsing error:', parseError);
+        
+        // Still display the AI response even if we couldn't extract workflow JSON
+        const assistantMessage: Message = {
           role: 'assistant',
-          content: "I generated a workflow solution, but couldn't save it to n8n. Please ensure n8n is running and try again."
+          content: aiResponseContent
         };
-        setMessages((prev) => [...prev, errorMessage]);
+        setMessages((prev) => [...prev, assistantMessage]);
+        
+        toast({
+          title: "JSON Parsing Error",
+          description: "I couldn't generate a valid workflow JSON. Please try rephrasing your request.",
+          variant: "destructive",
+        });
       }
       
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Connection Error",
-        description: "Failed to connect to Ollama API. Make sure Ollama is running.",
+        description: error instanceof Error ? error.message : "Failed to process your request.",
         variant: "destructive",
       });
       
       const errorMessage: Message = {
         role: 'assistant',
-        content: "I couldn't process your request. Please ensure Ollama is running on your local machine."
+        content: error instanceof Error 
+          ? `Error: ${error.message}. Please ensure Ollama and n8n are running on your local machine.` 
+          : "I couldn't process your request. Please ensure Ollama is running on your local machine."
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -485,7 +508,7 @@ Respond with a complete, production-ready workflow JSON that includes all necess
           />
           <Button 
             type="submit" 
-            disabled={isLoading || connectionStatus === 'disconnected' || !input.trim()}
+            disabled={isLoading || connectionStatus === 'disconnected' || !input.trim() || !selectedModel}
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>

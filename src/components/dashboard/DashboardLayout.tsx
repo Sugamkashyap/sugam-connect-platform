@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // n8n API key
 const N8N_API_KEY = import.meta.env.VITE_N8N_API_KEY;
-const N8N_URL = import.meta.env.VITE_N8N_URL;
+const N8N_URL = import.meta.env.VITE_N8N_URL || 'http://localhost:5678';
 
 const DashboardLayout: React.FC = () => {
   const { user } = useAuth();
@@ -24,8 +24,18 @@ const DashboardLayout: React.FC = () => {
     const checkOllamaAndN8n = async () => {
       try {
         // Check Ollama
-        await fetch('http://localhost:11434/api/tags', { method: 'GET' });
+        console.log('Checking Ollama from DashboardLayout');
+        const ollamaResponse = await fetch('http://localhost:11434/api/tags', { 
+          method: 'GET' 
+        });
+        
+        if (!ollamaResponse.ok) {
+          throw new Error(`HTTP ${ollamaResponse.status}: ${ollamaResponse.statusText}`);
+        }
+        
+        console.log('Ollama is available');
       } catch (error) {
+        console.error('Ollama check failed:', error);
         toast({
           title: "Ollama Not Detected",
           description: "To use the AI assistant, please make sure Ollama is running on localhost:11434",
@@ -35,6 +45,10 @@ const DashboardLayout: React.FC = () => {
       
       try {
         // Check n8n with API key
+        console.log('Checking n8n from DashboardLayout');
+        console.log('N8N_URL:', N8N_URL);
+        console.log('N8N_API_KEY exists:', !!N8N_API_KEY);
+        
         const n8nResponse = await fetch(`${N8N_URL}/rest/healthz`, { 
           method: 'GET',
           headers: {
@@ -42,6 +56,8 @@ const DashboardLayout: React.FC = () => {
             'X-N8N-API-KEY': N8N_API_KEY
           }
         });
+        
+        console.log('n8n response status:', n8nResponse.status);
         
         if (!n8nResponse.ok) {
           const errorData = await n8nResponse.json().catch(() => ({}));
@@ -52,12 +68,14 @@ const DashboardLayout: React.FC = () => {
           }
         }
         
+        console.log('n8n is available');
         // Validate the response format
         const n8nData = await n8nResponse.json();
         if (!n8nData || typeof n8nData !== 'object') {
           throw new Error('Invalid response from n8n');
         }
       } catch (error) {
+        console.error('n8n check failed:', error);
         toast({
           title: "n8n Not Detected",
           description: error instanceof Error ? error.message : "To create workflows, please make sure n8n is running on localhost:5678",
