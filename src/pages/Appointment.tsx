@@ -1,13 +1,11 @@
-
 import React, { useState } from 'react';
 import { format, addDays } from 'date-fns';
 import { Calendar as CalendarIcon, Clock, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
-import { useAppointments } from '@/contexts/AppointmentContext';
 
 const AppointmentPage = () => {
   const [date, setDate] = useState<Date | undefined>();
@@ -21,6 +19,7 @@ const AppointmentPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { toast } = useToast();
   
   // Available time slots
   const timeSlots = [
@@ -58,23 +57,26 @@ const AppointmentPage = () => {
 
     setIsSubmitting(true);
     
-    const { addAppointment } = useAppointments();
-    
-    // Create new appointment
-    addAppointment({
-      clientName: formData.name,
-      date: new Date(`${format(date, 'yyyy-MM-dd')}T${timeSlot.replace(/\s[AaPp][Mm]/, '')}`),
-      duration: '1 hour',
-      service: formData.service,
-      location: 'Virtual Meeting'
-    });
-
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast({
-      title: "Appointment scheduled!",
-      description: `Your appointment has been scheduled for ${format(date, 'MMMM d, yyyy')} at ${timeSlot}.`,
-    });
+    // Simulate API call with timeout
+    setTimeout(() => {
+      // Create appointment object
+      const appointmentData = {
+        clientName: formData.name,
+        date: new Date(`${format(date, 'yyyy-MM-dd')}T${timeSlot.replace(/\s[AaPp][Mm]/, '')}`),
+        duration: '1 hour',
+        service: formData.service,
+        location: 'Virtual Meeting'
+      };
+      
+      console.log('Appointment scheduled:', appointmentData);
+      
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      toast({
+        title: "Appointment scheduled!",
+        description: `Your appointment has been scheduled for ${format(date, 'MMMM d, yyyy')} at ${timeSlot}.`,
+      });
+    }, 1500);
   };
 
   return (

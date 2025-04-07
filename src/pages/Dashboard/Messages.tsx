@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,7 +64,7 @@ const mockContacts: Contact[] = [
     id: '5', 
     name: 'Mike Brown', 
     status: 'offline', 
-    lastMessage: 'I'll send the invoice tomorrow', 
+    lastMessage: "I'll send the invoice tomorrow", 
     unread: 0, 
     lastActive: '5 hours ago' 
   },
