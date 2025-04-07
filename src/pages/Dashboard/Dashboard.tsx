@@ -5,9 +5,13 @@ import { Activity, CreditCard, DollarSign, Users, AlertTriangle, ExternalLink, C
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import WorkflowStats from '@/components/dashboard/WorkflowStats';
+import RecentActivities from '@/components/dashboard/RecentActivities';
+import ClientTable from '@/components/dashboard/ClientTable';
 
 // n8n API key
-const N8N_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNmI5MWRhNy1iNTA5LTRlOWMtOGE2Zi1jY2UzNjFjNDg5OTYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzQzOTM4MzUzfQ.TwBc9feJWl5QHQrPNLWsE6AhRcLTL3CfDc0U1OJrBR4";
+const N8N_API_KEY = import.meta.env.VITE_N8N_API_KEY;
+const N8N_URL = import.meta.env.VITE_N8N_URL;
 
 const Dashboard: React.FC = () => {
   const { toast } = useToast();
@@ -23,7 +27,7 @@ const Dashboard: React.FC = () => {
   const checkN8nStatus = async () => {
     try {
       setN8nStatus('checking');
-      const response = await fetch('http://localhost:5678/rest/healthz', { 
+      const response = await fetch(`${N8N_URL}/rest/healthz`, { 
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -196,6 +200,17 @@ const Dashboard: React.FC = () => {
             <p className="text-xs text-muted-foreground">-2 from yesterday</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Workflow Stats and Recent Activities */}
+      <div className="grid gap-4 md:grid-cols-2 mt-6">
+        <WorkflowStats />
+        <RecentActivities />
+      </div>
+
+      {/* Client Table */}
+      <div className="mt-6">
+        <ClientTable />
       </div>
 
       {/* Content area for workspace */}

@@ -11,7 +11,8 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 // n8n API key
-const N8N_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNmI5MWRhNy1iNTA5LTRlOWMtOGE2Zi1jY2UzNjFjNDg5OTYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzQzOTM4MzUzfQ.TwBc9feJWl5QHQrPNLWsE6AhRcLTL3CfDc0U1OJrBR4";
+const N8N_API_KEY = import.meta.env.VITE_N8N_API_KEY;
+const N8N_URL = import.meta.env.VITE_N8N_URL;
 
 const DashboardLayout: React.FC = () => {
   const { user } = useAuth();
@@ -34,16 +35,32 @@ const DashboardLayout: React.FC = () => {
       
       try {
         // Check n8n with API key
-        await fetch('http://localhost:5678/rest/healthz', { 
+        const n8nResponse = await fetch(`${N8N_URL}/rest/healthz`, { 
           method: 'GET',
           headers: {
+            'Content-Type': 'application/json',
             'X-N8N-API-KEY': N8N_API_KEY
           }
         });
+        
+        if (!n8nResponse.ok) {
+          const errorData = await n8nResponse.json().catch(() => ({}));
+          if (n8nResponse.status === 401) {
+            throw new Error('Invalid n8n API key');
+          } else {
+            throw new Error(errorData.message || 'n8n service unavailable');
+          }
+        }
+        
+        // Validate the response format
+        const n8nData = await n8nResponse.json();
+        if (!n8nData || typeof n8nData !== 'object') {
+          throw new Error('Invalid response from n8n');
+        }
       } catch (error) {
         toast({
           title: "n8n Not Detected",
-          description: "To create workflows, please make sure n8n is running on localhost:5678",
+          description: error instanceof Error ? error.message : "To create workflows, please make sure n8n is running on localhost:5678",
           variant: "destructive",
         });
       }

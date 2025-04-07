@@ -7,6 +7,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
+import { useAppointments } from '@/contexts/AppointmentContext';
 
 const AppointmentPage = () => {
   const [date, setDate] = useState<Date | undefined>();
@@ -57,15 +58,23 @@ const AppointmentPage = () => {
 
     setIsSubmitting(true);
     
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-      toast({
-        title: "Appointment scheduled!",
-        description: `Your appointment has been scheduled for ${format(date, 'MMMM d, yyyy')} at ${timeSlot}.`,
-      });
-    }, 1500);
+    const { addAppointment } = useAppointments();
+    
+    // Create new appointment
+    addAppointment({
+      clientName: formData.name,
+      date: new Date(`${format(date, 'yyyy-MM-dd')}T${timeSlot.replace(/\s[AaPp][Mm]/, '')}`),
+      duration: '1 hour',
+      service: formData.service,
+      location: 'Virtual Meeting'
+    });
+
+    setIsSubmitting(false);
+    setIsSubmitted(true);
+    toast({
+      title: "Appointment scheduled!",
+      description: `Your appointment has been scheduled for ${format(date, 'MMMM d, yyyy')} at ${timeSlot}.`,
+    });
   };
 
   return (

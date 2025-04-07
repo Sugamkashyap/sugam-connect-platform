@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Phone, Mail, MapPin, Clock, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { useMessages } from '@/contexts/MessageContext';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -20,26 +21,29 @@ const Contact = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const { addMessage } = useMessages();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: ''
-      });
-      toast({
-        title: "Message sent successfully!",
-        description: "We'll get back to you as soon as possible.",
-      });
-    }, 1500);
+    // Add message to context
+    addMessage(formData);
+    
+    setIsSubmitting(false);
+    setIsSubmitted(true);
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      subject: '',
+      message: ''
+    });
+    
+    toast({
+      title: "Message sent successfully!",
+      description: "We'll get back to you as soon as possible.",
+    });
   };
 
   return (
