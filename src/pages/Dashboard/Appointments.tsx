@@ -1,16 +1,9 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { CalendarPlus, Clock, User, MapPin, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import AppointmentsHeader from '@/components/appointments/AppointmentsHeader';
+import AppointmentCalendar from '@/components/appointments/AppointmentCalendar';
+import AppointmentsList from '@/components/appointments/AppointmentsList';
+import NewAppointmentDialog from '@/components/appointments/NewAppointmentDialog';
 
 interface Appointment {
   id: string;
@@ -22,6 +15,16 @@ interface Appointment {
   location: string;
   status: 'scheduled' | 'completed' | 'canceled';
   notes?: string;
+}
+
+interface NewAppointmentFormData {
+  title: string;
+  client: string;
+  date: Date;
+  time: string;
+  duration: string;
+  location: string;
+  notes: string;
 }
 
 const mockAppointments: Appointment[] = [
@@ -83,15 +86,6 @@ const Appointments: React.FC = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [showNewAppointmentDialog, setShowNewAppointmentDialog] = useState(false);
   const [selectedTab, setSelectedTab] = useState('upcoming');
-  const [newAppointment, setNewAppointment] = useState({
-    title: '',
-    client: '',
-    date: new Date(),
-    time: '',
-    duration: '1 hour',
-    location: 'Office',
-    notes: '',
-  });
 
   // Filter appointments based on selected date and tab
   const filteredAppointments = appointments.filter((appointment) => {
@@ -108,10 +102,7 @@ const Appointments: React.FC = () => {
     return matchesDate && matchesTab;
   });
 
-  // Get dates with appointments for calendar highlighting
-  const appointmentDates = appointments.map(app => app.date);
-
-  const handleAddAppointment = () => {
+  const handleAddAppointment = (newAppointment: NewAppointmentFormData) => {
     const appointment: Appointment = {
       id: (appointments.length + 1).toString(),
       title: newAppointment.title,
@@ -126,15 +117,6 @@ const Appointments: React.FC = () => {
     
     setAppointments([...appointments, appointment]);
     setShowNewAppointmentDialog(false);
-    setNewAppointment({
-      title: '',
-      client: '',
-      date: new Date(),
-      time: '',
-      duration: '1 hour',
-      location: 'Office',
-      notes: '',
-    });
   };
 
   const formatDate = (date: Date): string => {
@@ -156,212 +138,33 @@ const Appointments: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Appointments</h2>
-          <p className="text-muted-foreground">Manage your schedule and meetings</p>
-        </div>
-        <Button onClick={() => setShowNewAppointmentDialog(true)}>
-          <CalendarPlus className="h-4 w-4 mr-2" />
-          New Appointment
-        </Button>
-      </div>
+      <AppointmentsHeader 
+        onNewAppointmentClick={() => setShowNewAppointmentDialog(true)} 
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Calendar */}
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Calendar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
-            />
-            <div className="mt-4 flex justify-center items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => changeDate(-1)}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-medium">
-                {date ? formatDate(date) : 'Select a date'}
-              </span>
-              <Button variant="outline" size="sm" onClick={() => changeDate(1)}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <AppointmentCalendar 
+          date={date}
+          setDate={setDate}
+          formatDate={formatDate}
+          changeDate={changeDate}
+        />
 
         {/* Appointments List */}
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
-              <CardTitle>Appointments</CardTitle>
-              <Tabs defaultValue="upcoming" className="w-[400px]" onValueChange={setSelectedTab}>
-                <TabsList>
-                  <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                  <TabsTrigger value="completed">Completed</TabsTrigger>
-                  <TabsTrigger value="canceled">Canceled</TabsTrigger>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {filteredAppointments.length === 0 ? (
-              <div className="text-center py-8">
-                <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No appointments found</h3>
-                <p className="text-muted-foreground">
-                  {selectedTab === 'upcoming' 
-                    ? "No upcoming appointments for the selected date." 
-                    : selectedTab === 'completed' 
-                      ? "No completed appointments for the selected date." 
-                      : selectedTab === 'canceled' 
-                        ? "No canceled appointments for the selected date."
-                        : "No appointments found for the selected date."}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredAppointments.map((appointment) => (
-                  <Card key={appointment.id} className="overflow-hidden">
-                    <div className={`h-1 ${
-                      appointment.status === 'completed' ? 'bg-green-500' :
-                      appointment.status === 'canceled' ? 'bg-red-500' :
-                      'bg-blue-500'
-                    }`} />
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium text-lg">{appointment.title}</h3>
-                          <div className="space-y-2 mt-2">
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <User className="h-4 w-4 mr-2" />
-                              {appointment.client}
-                            </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4 mr-2" />
-                              {appointment.time} ({appointment.duration})
-                            </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <MapPin className="h-4 w-4 mr-2" />
-                              {appointment.location}
-                            </div>
-                          </div>
-                          {appointment.notes && (
-                            <p className="mt-2 text-sm border-t pt-2">{appointment.notes}</p>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <Badge 
-                            variant={appointment.status === 'completed' ? 'default' :
-                                    appointment.status === 'canceled' ? 'destructive' : 'outline'}
-                          >
-                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                          </Badge>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <AppointmentsList 
+          filteredAppointments={filteredAppointments}
+          selectedTab={selectedTab}
+          setSelectedTab={setSelectedTab}
+        />
       </div>
 
       {/* New Appointment Dialog */}
-      <Dialog open={showNewAppointmentDialog} onOpenChange={setShowNewAppointmentDialog}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
-            <DialogTitle>Add New Appointment</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={newAppointment.title}
-                  onChange={(e) => setNewAppointment({...newAppointment, title: e.target.value})}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="client">Client</Label>
-                <Input
-                  id="client"
-                  value={newAppointment.client}
-                  onChange={(e) => setNewAppointment({...newAppointment, client: e.target.value})}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="time">Time</Label>
-                <Input
-                  id="time"
-                  placeholder="e.g., 10:00 AM"
-                  value={newAppointment.time}
-                  onChange={(e) => setNewAppointment({...newAppointment, time: e.target.value})}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="duration">Duration</Label>
-                <Select 
-                  value={newAppointment.duration}
-                  onValueChange={(value) => setNewAppointment({...newAppointment, duration: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30 minutes">30 minutes</SelectItem>
-                    <SelectItem value="1 hour">1 hour</SelectItem>
-                    <SelectItem value="1.5 hours">1.5 hours</SelectItem>
-                    <SelectItem value="2 hours">2 hours</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="location">Location</Label>
-              <Select 
-                value={newAppointment.location}
-                onValueChange={(value) => setNewAppointment({...newAppointment, location: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Office">Office</SelectItem>
-                  <SelectItem value="Video Call">Video Call</SelectItem>
-                  <SelectItem value="Phone Call">Phone Call</SelectItem>
-                  <SelectItem value="Client Location">Client Location</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={newAppointment.notes}
-                onChange={(e) => setNewAppointment({...newAppointment, notes: e.target.value})}
-                placeholder="Add any additional details"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewAppointmentDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddAppointment}>Add Appointment</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewAppointmentDialog
+        open={showNewAppointmentDialog}
+        onOpenChange={setShowNewAppointmentDialog}
+        onAddAppointment={handleAddAppointment}
+      />
     </div>
   );
 };
