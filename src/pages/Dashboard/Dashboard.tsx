@@ -1,13 +1,15 @@
 
 import React from 'react';
-import { Activity, CreditCard, DollarSign, Users } from 'lucide-react';
+import { Activity, CreditCard, DollarSign, Users, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 import WorkflowStats from '@/components/dashboard/WorkflowStats';
 import RecentActivities from '@/components/dashboard/RecentActivities';
 import ClientTable from '@/components/dashboard/ClientTable';
 import StatCard from '@/components/dashboard/StatCard';
 import QuickAccessCard from '@/components/dashboard/QuickAccessCard';
-import { Card } from '@/components/ui/card'; // Add missing import
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const Dashboard: React.FC = () => {
   const { toast } = useToast();
@@ -27,6 +29,11 @@ const Dashboard: React.FC = () => {
       title: "View messages",
       description: "Check your client communications",
       onClick: () => window.location.href = "/dashboard/messages"
+    },
+    {
+      title: "Site Management",
+      description: "Control site deployment and user access",
+      onClick: () => window.location.href = "/dashboard/site-management"
     }
   ];
 
@@ -58,12 +65,37 @@ const Dashboard: React.FC = () => {
           icon={DollarSign}
         />
         <StatCard 
-          title="Pending Approvals"
-          value={5}
-          change="-2 from yesterday"
-          icon={CreditCard}
+          title="Website Users"
+          value={142}
+          change="+12 this week"
+          icon={Globe}
         />
       </div>
+
+      {/* Site Management Quick Access */}
+      <Card className="border-2 border-brand-blue/20">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Globe className="mr-2 h-5 w-5" />
+            Site Management
+          </CardTitle>
+          <CardDescription>
+            Manage your website deployment and monitor user activity
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-between items-center">
+          <div>
+            <p className="text-sm text-muted-foreground">
+              Connect to Supabase to enable real-time user tracking and website deployment controls.
+            </p>
+          </div>
+          <Link to="/dashboard/site-management">
+            <Button>
+              Manage Site
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Workflow Stats and Recent Activities */}
       <div className="grid gap-4 md:grid-cols-2 mt-6">
@@ -76,14 +108,11 @@ const Dashboard: React.FC = () => {
         <ClientTable />
       </div>
 
-      {/* Content area for workspace */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* Recent Activity */}
+      {/* Quick Access */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mt-6">
         <Card className="col-span-4">
           <RecentActivities />
         </Card>
-
-        {/* Quick Access */}
         <QuickAccessCard actions={quickActions} />
       </div>
     </div>

@@ -18,6 +18,7 @@ import Clients from "./pages/Dashboard/Clients";
 import Messages from "./pages/Dashboard/Messages";
 import Documents from "./pages/Dashboard/Documents";
 import Workflows from "./pages/Dashboard/Workflows";
+import SiteManagement from "./pages/Dashboard/SiteManagement";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +48,7 @@ function App() {
             <Route path="messages" element={<Messages />} />
             <Route path="documents" element={<Documents />} />
             <Route path="workflows" element={<Workflows />} />
+            <Route path="site-management" element={<SiteManagement />} />
             <Route path="*" element={<NotFound />} />
           </Route>
           

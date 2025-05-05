@@ -8,7 +8,8 @@ import {
   Calendar, 
   MessageSquare,
   Settings,
-  Database
+  Database,
+  Globe
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -44,6 +45,11 @@ const DashboardSidebar: React.FC = () => {
       title: 'Workflows',
       href: '/dashboard/workflows',
       icon: Database,
+    },
+    {
+      title: 'Site Management',
+      href: '/dashboard/site-management',
+      icon: Globe,
     },
     {
       title: 'Settings',
