@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, CreditCard, DollarSign, Users, AlertTriangle, ExternalLink, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Activity, CreditCard, DollarSign, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import WorkflowStats from '@/components/dashboard/WorkflowStats';
 import RecentActivities from '@/components/dashboard/RecentActivities';
 import ClientTable from '@/components/dashboard/ClientTable';
+import ServiceStatus from '@/components/dashboard/ServiceStatus';
+import StatCard from '@/components/dashboard/StatCard';
+import ServiceInfoDialog from '@/components/dashboard/ServiceInfoDialog';
+import QuickAccessCard from '@/components/dashboard/QuickAccessCard';
 
 // n8n API key
 const N8N_API_KEY = import.meta.env.VITE_N8N_API_KEY;
@@ -93,6 +94,37 @@ const Dashboard: React.FC = () => {
     setShowN8nDialog(true);
   };
 
+  const quickActions = [
+    {
+      title: "Create new workflow",
+      description: "Set up automated processes for your clients",
+      onClick: openN8n
+    },
+    {
+      title: "Manage appointments",
+      description: "View and organize your upcoming schedule",
+      onClick: () => window.location.href = "/dashboard/appointments"
+    },
+    {
+      title: "Client documents",
+      description: "Access and manage client files and forms",
+      onClick: () => window.location.href = "/dashboard/documents"
+    }
+  ];
+
+  const ollamaInfoContent = (
+    <>
+      <p>To use the AI assistant, you need to have Ollama running locally:</p>
+      <ol className="list-decimal pl-5 space-y-2">
+        <li>Download and install Ollama from <a href="https://ollama.ai" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">ollama.ai</a></li>
+        <li>Open a terminal and run: <code className="bg-gray-100 px-2 py-1 rounded">ollama run llama3</code></li>
+        <li>Ensure Ollama is running on port 11434</li>
+        <li>Refresh this page once Ollama is running</li>
+      </ol>
+      <p className="mt-4">For more information, visit the <a href="https://github.com/ollama/ollama" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">Ollama GitHub repository</a>.</p>
+    </>
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -103,115 +135,58 @@ const Dashboard: React.FC = () => {
       {/* Services Status Cards */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* n8n Status Card */}
-        <Card className={n8nStatus === 'online' ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={n8nStatus === 'online' ? "bg-green-100 p-3 rounded-full" : "bg-amber-100 p-3 rounded-full"}>
-                  {n8nStatus === 'online' ? (
-                    <CheckCircle className="h-6 w-6 text-green-600" />
-                  ) : (
-                    <AlertTriangle className="h-6 w-6 text-amber-600" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-medium">n8n Workflow Engine</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {n8nStatus === 'online' 
-                      ? "Connected to n8n workflow engine on localhost:5678" 
-                      : "n8n workflow engine is not detected"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={checkN8nStatus}>
-                  Check Status
-                </Button>
-                <Button onClick={openN8n}>
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Open n8n
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ServiceStatus 
+          name="n8n Workflow Engine"
+          status={n8nStatus}
+          description={{
+            online: "Connected to n8n workflow engine on localhost:5678",
+            offline: "n8n workflow engine is not detected"
+          }}
+          onCheck={checkN8nStatus}
+          onAction={openN8n}
+          actionLabel="Open n8n"
+        />
 
         {/* Ollama Status Card */}
-        <Card className={ollamaStatus === 'online' ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={ollamaStatus === 'online' ? "bg-green-100 p-3 rounded-full" : "bg-amber-100 p-3 rounded-full"}>
-                  {ollamaStatus === 'online' ? (
-                    <CheckCircle className="h-6 w-6 text-green-600" />
-                  ) : (
-                    <AlertTriangle className="h-6 w-6 text-amber-600" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-medium">Ollama AI Assistant</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {ollamaStatus === 'online' 
-                      ? "Connected to Ollama on localhost:11434" 
-                      : "Ollama service is not detected"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={checkOllamaStatus}>
-                  Check Status
-                </Button>
-                <Button onClick={openOllamaInfo}>
-                  Learn More
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ServiceStatus 
+          name="Ollama AI Assistant"
+          status={ollamaStatus}
+          description={{
+            online: "Connected to Ollama on localhost:11434",
+            offline: "Ollama service is not detected"
+          }}
+          onCheck={checkOllamaStatus}
+          onAction={openOllamaInfo}
+          actionLabel="Learn More"
+        />
       </div>
 
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">24</div>
-            <p className="text-xs text-muted-foreground">+3 from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Workflows</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">+2 new this week</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹45,231</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">-2 from yesterday</p>
-          </CardContent>
-        </Card>
+        <StatCard 
+          title="Total Clients"
+          value={24}
+          change="+3 from last month"
+          icon={Users}
+        />
+        <StatCard 
+          title="Active Workflows"
+          value={12}
+          change="+2 new this week"
+          icon={Activity}
+        />
+        <StatCard 
+          title="Revenue"
+          value="₹45,231"
+          change="+20.1% from last month"
+          icon={DollarSign}
+        />
+        <StatCard 
+          title="Pending Approvals"
+          value={5}
+          change="-2 from yesterday"
+          icon={CreditCard}
+        />
       </div>
 
       {/* Workflow Stats and Recent Activities */}
@@ -227,92 +202,23 @@ const Dashboard: React.FC = () => {
 
       {/* Content area for workspace */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* Recent Activity */}
+        {/* Recent Activity - reused component */}
         <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Activity className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      Workflow #{i + 1} completed
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {i + 1} hour{i !== 0 ? 's' : ''} ago
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+          <RecentActivities />
         </Card>
 
         {/* Quick Access */}
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Quick Access</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              <div className="flex flex-col">
-                <Button variant="outline" className="justify-start text-left h-auto py-3 px-4" onClick={openN8n}>
-                  <div>
-                    <h4 className="font-medium leading-none mb-1">Create new workflow</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Set up automated processes for your clients
-                    </p>
-                  </div>
-                </Button>
-                <Button variant="outline" className="justify-start text-left h-auto py-3 px-4 mt-2">
-                  <div>
-                    <h4 className="font-medium leading-none mb-1">Manage appointments</h4>
-                    <p className="text-sm text-muted-foreground">
-                      View and organize your upcoming schedule
-                    </p>
-                  </div>
-                </Button>
-                <Button variant="outline" className="justify-start text-left h-auto py-3 px-4 mt-2">
-                  <div>
-                    <h4 className="font-medium leading-none mb-1">Client documents</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Access and manage client files and forms
-                    </p>
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <QuickAccessCard actions={quickActions} />
       </div>
 
       {/* Ollama Info Dialog */}
-      <Dialog open={showN8nDialog} onOpenChange={setShowN8nDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Setting Up Ollama</DialogTitle>
-          </DialogHeader>
-          <DialogDescription className="space-y-4">
-            <p>To use the AI assistant, you need to have Ollama running locally:</p>
-            <ol className="list-decimal pl-5 space-y-2">
-              <li>Download and install Ollama from <a href="https://ollama.ai" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">ollama.ai</a></li>
-              <li>Open a terminal and run: <code className="bg-gray-100 px-2 py-1 rounded">ollama run llama3</code></li>
-              <li>Ensure Ollama is running on port 11434</li>
-              <li>Refresh this page once Ollama is running</li>
-            </ol>
-            <p className="mt-4">For more information, visit the <a href="https://github.com/ollama/ollama" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">Ollama GitHub repository</a>.</p>
-          </DialogDescription>
-          <DialogFooter>
-            <Button onClick={() => setShowN8nDialog(false)}>Close</Button>
-            <Button variant="outline" onClick={checkOllamaStatus}>Check Connection</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ServiceInfoDialog
+        open={showN8nDialog}
+        onOpenChange={setShowN8nDialog}
+        onCheckConnection={checkOllamaStatus}
+        title="Setting Up Ollama"
+        description={ollamaInfoContent}
+      />
     </div>
   );
 };
